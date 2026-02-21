@@ -17,6 +17,12 @@ enum Role {
   FINANCE_ANALYST
 }
 
+enum VehicleType {
+  TRUCK
+  VAN
+  BIKE
+}
+
 enum VehicleStatus {
   AVAILABLE
   ON_TRIP
@@ -51,6 +57,7 @@ model Vehicle {
   id              String           @id @default(cuid())
   modelName       String
   licensePlate    String           @unique
+  type            VehicleType      @default(VAN)
   maxCapacityKg   Float
   odometer        Float
   acquisitionCost Float
@@ -93,6 +100,7 @@ model Trip {
   fuelLogs      FuelLog[]
 
   @@index([vehicleId])
+  @@index([driverId])
 }
 
 model MaintenanceLog {

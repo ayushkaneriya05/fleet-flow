@@ -22,7 +22,7 @@ interface DispatchTripInput {
   revenue: number
 }
 
-export async function dispatchTrip(data: DispatchTripInput) {
+export async function createDraftTrip(data: DispatchTripInput) {
   try {
     const today = new Date()
 
@@ -47,17 +47,7 @@ export async function dispatchTrip(data: DispatchTripInput) {
         throw new Error(`Cargo exceeds vehicle capacity (${vehicle.maxCapacityKg}kg).`)
       }
 
-      // 2. State Updates
-      await tx.vehicle.update({
-        where: { id: vehicle.id },
-        data: { status: 'ON_TRIP' },
-      })
-
-      await tx.driver.update({
-        where: { id: driver.id },
-        data: { status: 'ON_TRIP' },
-      })
-
+      // We only CREATE the draft here. We don't mark as ON_TRIP.
       const trip = await tx.trip.create({
         data: {
           vehicleId: vehicle.id,
@@ -66,8 +56,8 @@ export async function dispatchTrip(data: DispatchTripInput) {
           origin: data.origin,
           destination: data.destination,
           revenue: data.revenue,
-          startOdometer: vehicle.odometer, // Read from vehicle directly
-          status: 'DISPATCHED',
+          startOdometer: vehicle.odometer,
+          status: 'DRAFT',
         }
       })
 
@@ -75,10 +65,50 @@ export async function dispatchTrip(data: DispatchTripInput) {
     })
 
     revalidatePath('/trips')
+
+    return { success: true, trip: result }
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to create draft trip.' }
+  }
+}
+
+export async function dispatchDraftTrip(tripId: string) {
+  try {
+    const result = await prisma.$transaction(async (tx: any) => {
+      const trip = await tx.trip.findUnique({ where: { id: tripId } })
+
+      if (!trip || trip.status !== 'DRAFT') {
+        throw new Error('Trip is not in a draft state.')
+      }
+
+      // Ensure vehicle and driver are still available
+      const vehicle = await tx.vehicle.findUnique({ where: { id: trip.vehicleId } })
+      const driver = await tx.driver.findUnique({ where: { id: trip.driverId } })
+
+      if (!vehicle || vehicle.status !== 'AVAILABLE') {
+        throw new Error('Assigned vehicle is no longer available.')
+      }
+      if (!driver || driver.status !== 'ON_DUTY') {
+        throw new Error('Assigned driver is no longer on duty.')
+      }
+
+      // Mark vehicle & driver as ON_TRIP, Update Trip to DISPATCHED
+      await tx.vehicle.update({ where: { id: trip.vehicleId }, data: { status: 'ON_TRIP' } })
+      await tx.driver.update({ where: { id: trip.driverId }, data: { status: 'ON_TRIP' } })
+
+      const dispatchedTrip = await tx.trip.update({
+        where: { id: tripId },
+        data: { status: 'DISPATCHED' }
+      })
+
+      return dispatchedTrip
+    })
+
+    revalidatePath('/trips')
     revalidatePath('/vehicles')
     revalidatePath('/drivers')
     revalidatePath('/')
-    
+
     return { success: true, trip: result }
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to dispatch trip.' }
@@ -104,9 +134,9 @@ export async function completeTrip(tripId: string, endOdometer: number) {
       // Update Vehicle
       await tx.vehicle.update({
         where: { id: trip.vehicleId },
-        data: { 
+        data: {
           status: 'AVAILABLE',
-          odometer: endOdometer 
+          odometer: endOdometer
         }
       })
 
@@ -132,9 +162,52 @@ export async function completeTrip(tripId: string, endOdometer: number) {
     revalidatePath('/vehicles')
     revalidatePath('/drivers')
     revalidatePath('/')
-    
+
     return { success: true, trip: result }
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to complete trip.' }
+  }
+}
+
+export async function cancelTrip(tripId: string) {
+  try {
+    const result = await prisma.$transaction(async (tx: any) => {
+      const trip = await tx.trip.findUnique({
+        where: { id: tripId },
+      })
+
+      if (!trip || trip.status === 'COMPLETED' || trip.status === 'CANCELLED') {
+        throw new Error('Trip cannot be cancelled.')
+      }
+
+      // If it was dispatched, release the vehicle and driver
+      if (trip.status === 'DISPATCHED') {
+        await tx.vehicle.update({
+          where: { id: trip.vehicleId },
+          data: { status: 'AVAILABLE' }
+        })
+
+        await tx.driver.update({
+          where: { id: trip.driverId },
+          data: { status: 'ON_DUTY' }
+        })
+      }
+
+      const cancelledTrip = await tx.trip.update({
+        where: { id: tripId },
+        data: { status: 'CANCELLED' }
+      })
+
+      return cancelledTrip
+    })
+
+    revalidatePath('/trips')
+    revalidatePath('/vehicles')
+    revalidatePath('/drivers')
+    revalidatePath('/')
+
+    return { success: true, trip: result }
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to cancel trip.' }
   }
 }

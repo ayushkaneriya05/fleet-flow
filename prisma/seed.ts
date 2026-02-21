@@ -30,11 +30,11 @@ async function main() {
 
   // Seed Vehicles
   const vehicles = [
-    { modelName: 'Ford Transit', licensePlate: 'FL-TR-001', maxCapacityKg: 1500, odometer: 45000, acquisitionCost: 35000, status: 'AVAILABLE' as const },
-    { modelName: 'Mercedes Sprinter', licensePlate: 'FL-SP-002', maxCapacityKg: 2000, odometer: 22000, acquisitionCost: 45000, status: 'AVAILABLE' as const },
-    { modelName: 'Volvo FH16', licensePlate: 'FL-VO-003', maxCapacityKg: 25000, odometer: 150000, acquisitionCost: 120000, status: 'ON_TRIP' as const },
-    { modelName: 'Scania R500', licensePlate: 'FL-SC-004', maxCapacityKg: 24000, odometer: 80000, acquisitionCost: 110000, status: 'IN_SHOP' as const },
-    { modelName: 'Renault Master', licensePlate: 'FL-RE-005', maxCapacityKg: 1300, odometer: 300000, acquisitionCost: 28000, status: 'RETIRED' as const },
+    { modelName: 'Ford Transit', licensePlate: 'FL-TR-001', type: 'VAN' as const, maxCapacityKg: 1500, odometer: 45000, acquisitionCost: 35000, status: 'AVAILABLE' as const },
+    { modelName: 'Mercedes Sprinter', licensePlate: 'FL-SP-002', type: 'VAN' as const, maxCapacityKg: 2000, odometer: 22000, acquisitionCost: 45000, status: 'AVAILABLE' as const },
+    { modelName: 'Volvo FH16', licensePlate: 'FL-VO-003', type: 'TRUCK' as const, maxCapacityKg: 25000, odometer: 150000, acquisitionCost: 120000, status: 'ON_TRIP' as const },
+    { modelName: 'Scania R500', licensePlate: 'FL-SC-004', type: 'TRUCK' as const, maxCapacityKg: 24000, odometer: 80000, acquisitionCost: 110000, status: 'IN_SHOP' as const },
+    { modelName: 'Renault Master', licensePlate: 'FL-RE-005', type: 'VAN' as const, maxCapacityKg: 1300, odometer: 300000, acquisitionCost: 28000, status: 'RETIRED' as const },
   ]
 
   const createdVehicles = []

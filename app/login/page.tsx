@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Truck, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react'
+import { Truck, Lock, Mail, AlertCircle, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react'
 
 // Basic UI component placeholders until we set up shadcn
 // Since shadcn config is failing or pending, I'll use standard Tailwind for this page matching the reference.
@@ -21,7 +21,9 @@ type LoginFormValues = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isForgotPassword, setIsForgotPassword] = useState(false)
 
   const {
     register,
@@ -35,6 +37,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true)
     setError(null)
+    setSuccessMsg(null)
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -58,6 +61,42 @@ export default function LoginPage() {
     }
   }
 
+  const onForgotPasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+    setSuccessMsg(null)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+    const newPassword = formData.get('newPassword') as string
+
+    if (!email || !newPassword) {
+      setError("Please provide an email address and a new password.")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, newPassword }),
+      })
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to process request')
+      }
+
+      setSuccessMsg(result.message)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-neutral-200">
@@ -70,65 +109,151 @@ export default function LoginPage() {
         </div>
 
         <div className="p-8">
-          <h2 className="text-xl font-semibold text-neutral-800 mb-6">Sign In to Command Center</h2>
+          <h2 className="text-xl font-semibold text-neutral-800 mb-6">
+            {isForgotPassword ? 'Reset Password' : 'Sign In to Command Center'}
+          </h2>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Email Address</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-neutral-400" />
+          {successMsg && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-emerald-700">{successMsg}</p>
+            </div>
+          )}
+
+          {!isForgotPassword ? (
+            <>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Email Address</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-neutral-400" />
+                    </div>
+                    <input
+                      {...register('email')}
+                      type="email"
+                      placeholder="admin@fleetflow.test"
+                      className="block w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-[#6324eb] focus:border-[#6324eb] sm:text-sm outline-none transition-colors"
+                    />
+                  </div>
+                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
                 </div>
-                <input
-                  {...register('email')}
-                  type="email"
-                  placeholder="admin@fleetflow.test"
-                  className="block w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-[#6324eb] focus:border-[#6324eb] sm:text-sm outline-none transition-colors"
-                />
-              </div>
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Password</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-neutral-400" />
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-neutral-700">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(true)
+                        setError(null)
+                        setSuccessMsg(null)
+                      }}
+                      className="text-xs font-medium text-[#6324eb] hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-neutral-400" />
+                    </div>
+                    <input
+                      {...register('password')}
+                      type="password"
+                      placeholder="••••••••"
+                      className="block w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-[#6324eb] focus:border-[#6324eb] sm:text-sm outline-none transition-colors"
+                    />
+                  </div>
+                  {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
                 </div>
-                <input
-                  {...register('password')}
-                  type="password"
-                  placeholder="••••••••"
-                  className="block w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-[#6324eb] focus:border-[#6324eb] sm:text-sm outline-none transition-colors"
-                />
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#6324eb] hover:bg-[#521dc4] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6324eb] disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Log In'}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center text-sm text-neutral-500 flex flex-col gap-2">
+                <div>
+                  For demo: <span className="font-semibold text-neutral-800">admin@fleetflow.test</span> / <span className="font-semibold text-neutral-800">password123</span>
+                </div>
+                <div>
+                  Don't have an account? <Link href="/register" className="font-semibold text-[#6324eb] hover:underline">Register here</Link>
+                </div>
               </div>
-              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
-            </div>
+            </>
+          ) : (
+            <form onSubmit={onForgotPasswordSubmit} className="space-y-5">
+              <p className="text-sm text-neutral-600 mb-4">
+                Enter your email address and your new password to reset your account.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Email Address</label>
+                <div className="relative mb-4">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-neutral-400" />
+                  </div>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="admin@fleetflow.test"
+                    className="block w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-[#6324eb] focus:border-[#6324eb] sm:text-sm outline-none transition-colors"
+                  />
+                </div>
+              </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#6324eb] hover:bg-[#521dc4] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6324eb] disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Log In'}
-            </button>
-          </form>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">New Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-neutral-400" />
+                  </div>
+                  <input
+                    name="newPassword"
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    className="block w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-[#6324eb] focus:border-[#6324eb] sm:text-sm outline-none transition-colors"
+                  />
+                </div>
+              </div>
 
-          <div className="mt-6 text-center text-sm text-neutral-500 flex flex-col gap-2">
-            <div>
-              For demo: <span className="font-semibold text-neutral-800">admin@fleetflow.test</span> / <span className="font-semibold text-neutral-800">password123</span>
-            </div>
-            <div>
-              Don't have an account? <Link href="/register" className="font-semibold text-[#6324eb] hover:underline">Register here</Link>
-            </div>
-          </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#6324eb] hover:bg-[#521dc4] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6324eb] disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Reset Password'}
+              </button>
+
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(false)
+                    setError(null)
+                    setSuccessMsg(null)
+                  }}
+                  className="text-sm font-medium text-neutral-600 hover:text-[#6324eb] flex items-center justify-center gap-1 mx-auto"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Log In
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

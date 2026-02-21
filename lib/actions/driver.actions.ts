@@ -6,13 +6,18 @@ import { revalidatePath } from 'next/cache'
 export async function getDrivers() {
   return prisma.driver.findMany({
     orderBy: { name: 'asc' },
+    include: {
+      trips: {
+        select: { status: true }
+      }
+    }
   })
 }
 
 export async function getEligibleDrivers() {
   const today = new Date()
   return prisma.driver.findMany({
-    where: { 
+    where: {
       status: 'ON_DUTY',
       licenseExpiryDate: { gt: today }
     },
@@ -30,5 +35,31 @@ export async function updateDriverStatus(driverId: string, status: 'ON_DUTY' | '
     return { success: true, driver }
   } catch (error: any) {
     return { success: false, error: 'Failed to update driver status.' }
+  }
+}
+
+export async function createDriver(data: {
+  name: string
+  licenseNumber: string
+  licenseCategory: string
+  licenseExpiry: Date
+}) {
+  try {
+    const driver = await prisma.driver.create({
+      data: {
+        name: data.name,
+        licenseNumber: data.licenseNumber,
+        licenseCategory: data.licenseCategory,
+        licenseExpiryDate: data.licenseExpiry,
+        status: 'ON_DUTY'
+      }
+    })
+    revalidatePath('/drivers')
+    return { success: true, driver }
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return { success: false, error: 'License number already exists.' }
+    }
+    return { success: false, error: 'Failed to create driver.' }
   }
 }

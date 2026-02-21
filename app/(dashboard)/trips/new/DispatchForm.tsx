@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Vehicle, Driver } from '@prisma/client'
-import { dispatchTrip } from '@/lib/actions/trip.actions'
+import { Driver, Vehicle } from '@prisma/client'
+import { createDraftTrip } from '@/lib/actions/trip.actions'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle } from 'lucide-react'
 
@@ -31,7 +31,7 @@ export default function DispatchForm({
 }) {
   const router = useRouter()
   const [submitError, setSubmitError] = useState<string | null>(null)
-  
+
   const {
     register,
     handleSubmit,
@@ -55,14 +55,14 @@ export default function DispatchForm({
 
   const onSubmit = async (data: TripFormValues) => {
     setSubmitError(null)
-    
+
     // Extra client-side validation just to be sure before server action
     if (selectedVehicle && data.cargoWeight > selectedVehicle.maxCapacityKg) {
       setSubmitError(`Cargo exceeds vehicle capacity (${selectedVehicle.maxCapacityKg}kg).`)
       return
     }
 
-    const res = await dispatchTrip(data)
+    const res = await createDraftTrip(data)
     if (res.success) {
       router.push('/trips')
     } else {
@@ -83,7 +83,7 @@ export default function DispatchForm({
         {/* Vehicle Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-neutral-900">Vehicle</label>
-          <select 
+          <select
             {...register('vehicleId')}
             className="w-full flex h-10 w-full items-center justify-between rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#6324eb] focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -100,7 +100,7 @@ export default function DispatchForm({
         {/* Driver Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-neutral-900">Driver</label>
-          <select 
+          <select
             {...register('driverId')}
             className="w-full flex h-10 w-full items-center justify-between rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#6324eb] focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -149,7 +149,7 @@ export default function DispatchForm({
           />
           {errors.cargoWeight && <p className="text-sm text-red-500">{errors.cargoWeight.message}</p>}
           {selectedVehicle && (
-             <p className="text-xs text-neutral-500">Max allowed: {selectedVehicle.maxCapacityKg} kg</p>
+            <p className="text-xs text-neutral-500">Max allowed: {selectedVehicle.maxCapacityKg} kg</p>
           )}
         </div>
 
@@ -167,21 +167,21 @@ export default function DispatchForm({
       </div>
 
       <div className="pt-4 flex justify-end gap-3">
-        <Button 
-          type="button" 
-          variant="outline" 
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => router.back()}
           disabled={isSubmitting}
         >
           Cancel
         </Button>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={isSubmitting}
-          className="bg-[#6324eb] hover:bg-[#521dc4]"
+          className="bg-neutral-800 hover:bg-neutral-700"
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Dispatch Trip
+          Save as Draft
         </Button>
       </div>
     </form>

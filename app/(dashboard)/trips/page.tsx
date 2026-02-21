@@ -3,8 +3,10 @@ import { getTrips, completeTrip } from '@/lib/actions/trip.actions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Navigation } from 'lucide-react'
+import { Plus, Navigation, Banknote } from 'lucide-react'
 import TripCompletionAction from './TripCompletionAction'
+import TripCancelAction from './TripCancelAction'
+import TripDispatchAction from './TripDispatchAction'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,25 +38,35 @@ export default async function TripsPage() {
         ) : (
           trips.map(trip => (
             <Card key={trip.id} className="relative overflow-hidden">
-              <div className={`absolute top-0 left-0 w-1 h-full ${
-                 trip.status === 'COMPLETED' ? 'bg-emerald-500' : 
-                 trip.status === 'DISPATCHED' ? 'bg-blue-500' : 'bg-neutral-300'
-              }`} />
+              <div className={`absolute top-0 left-0 w-1 h-full ${trip.status === 'COMPLETED' ? 'bg-emerald-500' :
+                trip.status === 'DISPATCHED' ? 'bg-blue-500' :
+                  trip.status === 'CANCELLED' ? 'bg-red-500' : 'bg-neutral-300'
+                }`} />
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Navigation className="w-4 h-4 text-neutral-400" />
                     {trip.origin} <span className="text-neutral-300 mx-1">→</span> {trip.destination}
                   </CardTitle>
-                  <Badge variant={
-                    trip.status === 'COMPLETED' ? 'default' : 
-                    trip.status === 'DISPATCHED' ? 'secondary' : 'outline'
-                  } className={
-                    trip.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 
-                    trip.status === 'DISPATCHED' ? 'bg-blue-100 text-blue-800' : ''
-                  }>
-                    {trip.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {trip.status === 'DRAFT' && (
+                      <TripDispatchAction tripId={trip.id} />
+                    )}
+                    {(trip.status === 'DISPATCHED' || trip.status === 'DRAFT') && (
+                      <TripCancelAction tripId={trip.id} />
+                    )}
+                    <Badge variant={
+                      trip.status === 'COMPLETED' ? 'default' :
+                        (trip.status === 'DISPATCHED' || trip.status === 'DRAFT') ? 'secondary' : 'outline'
+                    } className={
+                      trip.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
+                        trip.status === 'DISPATCHED' ? 'bg-blue-100 text-blue-800' :
+                          trip.status === 'DRAFT' ? 'bg-amber-100 text-amber-800' :
+                            trip.status === 'CANCELLED' ? 'bg-red-50 text-red-700' : ''
+                    }>
+                      {trip.status}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 pt-2">
@@ -68,8 +80,8 @@ export default async function TripsPage() {
                     <span className="font-medium">{trip.driver.name}</span>
                   </div>
                   <div>
-                    <span className="text-neutral-500 block text-xs">Cargo</span>
-                    <span className="font-medium">{trip.cargoWeight} kg</span>
+                    <span className="text-neutral-500 block text-xs flex items-center gap-1"><Banknote className="w-3 h-3" /> Revenue</span>
+                    <span className="font-medium text-emerald-600">${trip.revenue.toLocaleString()}</span>
                   </div>
                   <div>
                     <span className="text-neutral-500 block text-xs">Start Odo</span>

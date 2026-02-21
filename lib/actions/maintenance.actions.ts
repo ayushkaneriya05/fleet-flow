@@ -29,7 +29,7 @@ export async function createMaintenanceLog(data: MaintenanceLogInput) {
     revalidatePath('/vehicles')
     revalidatePath('/expenses')
     revalidatePath('/')
-    
+
     return { success: true, log: result }
   } catch (error: any) {
     return { success: false, error: 'Failed to create maintenance log.' }
@@ -46,4 +46,28 @@ export async function getMaintenanceAlerts() {
       }
     }
   })
+}
+
+export async function getMaintenanceLogs() {
+  return prisma.maintenanceLog.findMany({
+    include: {
+      vehicle: true,
+    },
+    orderBy: { date: 'desc' },
+  })
+}
+
+export async function markRepaired(vehicleId: string) {
+  try {
+    const vehicle = await prisma.vehicle.update({
+      where: { id: vehicleId, status: 'IN_SHOP' },
+      data: { status: 'AVAILABLE' }
+    })
+    revalidatePath('/maintenance')
+    revalidatePath('/vehicles')
+    revalidatePath('/')
+    return { success: true, vehicle }
+  } catch (error: any) {
+    return { success: false, error: 'Failed to mark vehicle as repaired.' }
+  }
 }
