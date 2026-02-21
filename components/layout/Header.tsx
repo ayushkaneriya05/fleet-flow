@@ -3,8 +3,17 @@
 import { Bell, LogOut, Search, User } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
-export default function Header() {
+interface HeaderProps {
+  user: { name: string; role: string } | null
+}
+
+export default function Header({ user }: HeaderProps) {
   const router = useRouter()
+
+  const formatRole = (role?: string) => {
+    if (!role) return 'Fleet Manager'
+    return role.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
+  }
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -27,7 +36,7 @@ export default function Header() {
           />
         </div>
       </div>
-      
+
       <div className="ml-4 flex items-center md:ml-6 gap-4">
         <button
           type="button"
@@ -43,11 +52,11 @@ export default function Header() {
             <User className="h-5 w-5 text-neutral-500" />
           </div>
           <div className="hidden md:block flex-col text-sm">
-            <span className="block font-medium text-neutral-700">Admin User</span>
-            <span className="block text-xs text-neutral-500">Fleet Manager</span>
+            <span className="block font-medium text-neutral-700">{user?.name || 'Admin User'}</span>
+            <span className="block text-xs text-neutral-500">{formatRole(user?.role)}</span>
           </div>
 
-          <button 
+          <button
             onClick={handleLogout}
             className="ml-2 text-neutral-400 hover:text-red-500 transition-colors"
             title="Logout"

@@ -14,9 +14,8 @@ import {
   LineChart,
   Line
 } from 'recharts'
-import { Download, FileText, DollarSign, TrendingUp, Activity } from 'lucide-react'
-import { exportToCSV, exportToPDF } from '@/lib/export'
-import { useState } from 'react'
+import { FileText, DollarSign, TrendingUp, Activity } from 'lucide-react'
+import { exportToCSV } from '@/lib/export'
 
 interface AnalyticsChartsProps {
   expenseTrendData: any[]
@@ -30,16 +29,8 @@ interface AnalyticsChartsProps {
 }
 
 export default function AnalyticsCharts({ expenseTrendData, roiData, summaryKpis, exportData }: AnalyticsChartsProps) {
-  const [isExportingPDF, setIsExportingPDF] = useState(false)
-
   const handleExportCSV = () => {
     exportToCSV(exportData, 'fuel-expenses-report')
-  }
-
-  const handleExportPDF = async () => {
-    setIsExportingPDF(true)
-    await exportToPDF('analytics-report-area', 'FleetFlow-Analytics')
-    setIsExportingPDF(false)
   }
 
   // Custom Tooltip for ROI chart to show ROI percentages
@@ -49,8 +40,8 @@ export default function AnalyticsCharts({ expenseTrendData, roiData, summaryKpis
       return (
         <div className="bg-white p-3 border border-neutral-200 shadow-md rounded-lg">
           <p className="font-semibold text-neutral-800 mb-2">{label}</p>
-          <p className="text-emerald-600 text-sm">Revenue: ${data.revenue.toLocaleString()}</p>
-          <p className="text-red-500 text-sm">Costs: ${data.costs.toLocaleString()}</p>
+          <p className="text-emerald-600 text-sm">Revenue: ${data.revenue.toLocaleString('en-US')}</p>
+          <p className="text-red-500 text-sm">Costs: ${data.costs.toLocaleString('en-US')}</p>
           <p className="text-blue-600 font-medium text-sm mt-1 border-t pt-1">ROI: {data.roiPercent}%</p>
         </div>
       );
@@ -65,10 +56,6 @@ export default function AnalyticsCharts({ expenseTrendData, roiData, summaryKpis
           <FileText className="w-4 h-4 mr-2 text-emerald-600" />
           Export Data (CSV)
         </Button>
-        <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isExportingPDF}>
-          <Download className="w-4 h-4 mr-2 text-red-600" />
-          {isExportingPDF ? 'Generating...' : 'Download Report (PDF)'}
-        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 mb-6">
@@ -79,7 +66,7 @@ export default function AnalyticsCharts({ expenseTrendData, roiData, summaryKpis
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-emerald-900">${summaryKpis.revenue.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-emerald-900">${summaryKpis.revenue.toLocaleString('en-US')}</div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-red-50 to-white shadow-sm border-red-100">
@@ -89,7 +76,7 @@ export default function AnalyticsCharts({ expenseTrendData, roiData, summaryKpis
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-900">${summaryKpis.costs.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-red-900">${summaryKpis.costs.toLocaleString('en-US')}</div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-blue-50 to-white shadow-sm border-blue-100">
